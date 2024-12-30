@@ -1,10 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
+// eslint-disable-next-line
+import { SomeComponent } from '@mediapipe/tasks-vision';
+
 import { Card } from '../src/components/ui/card'
 import { Button } from '../src/components/ui/button'
 import { Input } from '../src/components/ui/input'
-import { Plus, LogIn, Users, Globe, RotateCcw, ArrowLeft, RefreshCw } from 'lucide-react'
+import { Plus, LogIn, Users, Globe, RotateCcw, ArrowLeft, RefreshCw, MessageCircle, Send } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -74,6 +77,10 @@ export default function TicTacToe() {
   const [showRestartConfirmation, setShowRestartConfirmation] = useState(false)
   const [searchingAvatars, setSearchingAvatars] = useState(avatars)
   const [matchFound, setMatchFound] = useState(false)
+  const [showChat, setShowChat] = useState(false)
+  const [chatMessages, setChatMessages] = useState([])
+  const [currentMessage, setCurrentMessage] = useState('')
+  const chatEndRef = useRef(null)
 
   useEffect(() => {
     if (gameState === 'searching') {
@@ -113,6 +120,10 @@ export default function TicTacToe() {
     }
     return () => clearInterval(timer)
   }, [gameState, countdown])
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" })
+  }, [chatMessages])
 
   const createGame = () => {
     const newGameId = Math.floor(1000 + Math.random() * 9000).toString()
@@ -175,6 +186,7 @@ export default function TicTacToe() {
       setInputGameId('')
       setPlayers([])
     }
+    setChatMessages([])
   }
 
   const playAgain = () => {
@@ -200,6 +212,18 @@ export default function TicTacToe() {
       setGameState('mode_selection')
     } else if (gameState === 'playing') {
       setShowRestartConfirmation(true)
+    }
+  }
+
+  const toggleChat = () => {
+    setShowChat(!showChat)
+  }
+
+  const sendMessage = () => {
+    if (currentMessage.trim() !== '') {
+      const currentPlayerId = players.find(p => p.symbol === currentPlayer)?.id
+      setChatMessages([...chatMessages, { sender: currentPlayerId, message: currentMessage }])
+      setCurrentMessage('')
     }
   }
 
@@ -389,6 +413,46 @@ export default function TicTacToe() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Chat Icon */}
+        {(gameState === 'playing' || gameState === 'ended') && (
+          <Button
+            onClick={toggleChat}
+            className="fixed bottom-4 right-4 rounded-full w-12 h-12 bg-blue-500 hover:bg-blue-600 shadow-lg shadow-blue-500/50"
+          >
+            <MessageCircle className="h-6 w-6" />
+          </Button>
+        )}
+
+        {/* Chat Dialog */}
+        <Dialog open={showChat} onOpenChange={setShowChat}>
+          <DialogContent className="bg-black/90 text-white border-gray-700 max-w-md w-full">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-bold">Chat</DialogTitle>
+            </DialogHeader>
+            <div className="h-64 overflow-y-auto mb-4">
+              {chatMessages.map((msg, index) => (
+                <div key={index} className="mb-2">
+                  <span className="font-bold">{msg.sender}: </span>
+                  <span>{msg.message}</span>
+                </div>
+              ))}
+              <div ref={chatEndRef} />
+            </div>
+            <div className="flex space-x-2">
+              <Input
+                value={currentMessage}
+                onChange={(e) => setCurrentMessage(e.target.value)}
+                placeholder="Type your message..."
+                className="bg-white/20 border-gray-600 text-white placeholder-gray-400"
+                onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+              />
+              <Button onClick={sendMessage} className="bg-blue-500 hover:bg-blue-600">
+                <Send className="h-4 w-4" />
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </>
   )
@@ -414,5 +478,4 @@ function calculateWinner(squares) {
 
   return null
 }
-
 
